@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Only POST allowed' });
   }
 
-  const { messages, model = "grok-2-latest", temperature = 0.9, max_tokens = 300 } = req.body;
+  const { messages, model = "grok-beta", temperature = 0.9, max_tokens = 300 } = req.body;
 
   try {
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
