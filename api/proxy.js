@@ -1,10 +1,13 @@
+export const config = {
+  runtime: "nodejs"
+};
+
 export default async function handler(req, res) {
-  // 🔑 CORS HEADERS – TÄRKEINTÄ
+  // CORS – pakotettuna Node-runtimeen
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Preflight (tämä korjaa virheen)
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -24,7 +27,7 @@ export default async function handler(req, res) {
     });
 
     const data = await r.json();
-    return res.status(r.status).json(data);
+    return res.status(200).json(data);
   } catch (e) {
     return res.status(500).json({ error: String(e) });
   }
