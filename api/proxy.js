@@ -1,11 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-
-export const config = { runtime: "nodejs" };
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+export const config = {
+  runtime: "nodejs"
+};
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "https://onlyfans.com");
@@ -18,46 +13,16 @@ export default async function handler(req, res) {
 
   try {
     const auth = req.headers.authorization || "";
-    const licenseKey = auth.replace(/^Bearer\s+/i, "").trim();
+    const apiKey = auth.replace(/^Bearer\s+/i, "");
+    if (!apiKey) return res.status(401).json({ error: "Missing Authorization header" });
 
-    if (!licenseKey) {
-      return res.status(401).json({ error: "Missing license key" });
-    }
-
-    // Validate license
-    const { data, error } = await supabase
-      .from("licenses")
-      .select("*")
-      .eq("license_key", licenseKey)
-      .single();
-
-    if (error || !data) {
-      return res.status(401).json({ error: "Invalid license key" });
-    }
-
-    const now = new Date();
-    if (new Date(data.valid_until) < now) {
-      return res.status(403).json({ error: "License expired" });
-    }
-
-    if (data.tier !== "agency" && data.messages_used >= data.messages_limit) {
-      return res.status(429).json({ error: "Message limit reached for this month" });
-    }
-
-    // Increment message count
-    await supabase
-      .from("licenses")
-      .update({ messages_used: data.messages_used + 1 })
-      .eq("license_key", licenseKey);
-
-    // Forward to Grok with server-side API key
     const r = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.GROK_API_KEY}`,
-        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(req.body)
     });
 
     const text = await r.text();
