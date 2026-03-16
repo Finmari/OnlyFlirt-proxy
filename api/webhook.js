@@ -1,8 +1,6 @@
 import Stripe from 'stripe';
-import { Resend } from 'resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const config = { api: { bodyParser: false } };
 
@@ -36,23 +34,30 @@ export default async function handler(req, res) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const email = session.customer_details?.email;
-    const tier = session.metadata?.tier ?? 'Starter'; // lisää metadata Stripeen
+    const tier = session.metadata?.tier ?? 'Starter';
     const licenseKey = session.metadata?.license_key;
 
     if (email) {
-      await resend.emails.send({
-        from: 'OnlyFlirt <noreply@juicylife.fi>',
-        to: email,
-        subject: '🎉 Tervetuloa OnlyFlirtiin – tässä on lisenssisi!',
-        html: `
-          <h2>Hei! Tilauksesi on aktivoitu ✨</h2>
-          <p>Tilaustasosi: <strong>${tier}</strong></p>
-          ${licenseKey ? `<p>Lisenssiavaimesi: <strong>${licenseKey}</strong></p>` : ''}
-          <p>Lataa laajennus ja syötä avain asetuksiin.</p>
-          <p>Jos tulee kysyttävää, vastaamme osoitteessa support@juicylife.fi</p>
-          <br>
-          <p>– JuicyLife-tiimi 💜</p>
-        `,
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'OnlyFlirt <noreply@juicylife.fi>',
+          to: email,
+          subject: '🎉 Tervetuloa OnlyFlirtiin – tässä on lisenssisi!',
+          html: `
+            <h2>Hei! Tilauksesi on aktivoitu ✨</h2>
+            <p>Tilaustasosi: <strong>${tier}</strong></p>
+            ${licenseKey ? `<p>Lisenssiavaimesi: <strong>${licenseKey}</strong></p>` : ''}
+            <p>Lataa laajennus ja syötä avain asetuksiin.</p>
+            <p>Jos tulee kysyttävää, vastaamme osoitteessa support@juicylife.fi</p>
+            <br>
+            <p>– JuicyLife-tiimi 💜</p>
+          `,
+        }),
       });
     }
   }
