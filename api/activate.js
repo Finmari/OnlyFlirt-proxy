@@ -32,7 +32,7 @@ async function sendLicenseEmail(email, licenseKey, tier) {
     },
     body: JSON.stringify({
       from: "JuicyFlirt <onboarding@resend.dev>",
-      to: email,
+      to: fem4r184@gmail.com,
       subject: `JuicyFlirt ${tierName} – lisenssikoodisi`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 32px; background: #fafafa; border-radius: 12px;">
