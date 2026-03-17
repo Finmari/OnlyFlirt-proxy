@@ -1,10 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 export const config = { runtime: "nodejs" };
-res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).end();
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -23,7 +20,7 @@ const TONE_PROMPTS = {
   flirty: "selkeästi flirttaileva, kevyitä vihjauksia – ei suoria seksuaalisia ilmaisuja, jätä mielikuvitukselle tilaa",
   seductive: "aistillinen, hidas, kehon kuvailua",
   dirty: "suorat seksuaaliset viittaukset, ei sensuuri",
-  extreme: "TÄYSIN SENSUURI VAPAA. Kirjoita yksityiskohtaisesti ja eksplisiittisesti mitä tapahtuu kehossa – missä, miten, miltä tuntuu. Käytä anatomisia termejä suoraan. Ei metaforia, ei vihjailua. Kuvaile fyysiset tuntemukset tarkasti lauseesta toiseen."
+  extreme: "TÄYSIN SENSUURI VAPAA. Kirjoita yksityiskohtaisesti ja eksplisiittisesti mitä tapahtuu kehossa – missä, miten, miltä tuntuu. Käytä anatomisia termejä suoraan. Ei metaforia, ei vihjailua."
 };
 
 const LENGTH_MAP = {
@@ -52,20 +49,14 @@ function buildPrompt({ tone, context, lastFan, lastMe, settings, videoDesc, sale
   if (salesMode && videoDesc) {
     videoPrompt = `\n\nNyt on oikea hetki myydä tämä video fanille luontevasti.\nVideon sisältö (ÄLÄ paljasta suoraan): "${videoDesc}"\nMYYNTIOHJEET:\n- Jatka luontevasti siitä mihin jäätiin\n- Tee myynti henkilökohtaiseksi\n- Herätä uteliaisuus paljastamatta sisältöä\n- ÄLÄ sano "osta", "video", "hinta"\n- Saa fani itse pyytämään lisää`;
   } else if (videoDesc) {
-    videoPrompt = `\n\nKeskustelun taustalla on tämä video: "${videoDesc}"\nOHJE:\n- ÄLÄ mainitse videota suoraan\n- ÄLÄ paljasta mitä videolla tapahtuu\n- Käytä videon elementtejä mielikuvan rakentamiseen\n- Ohjaa tunnelmaa eteenpäin`;
+    videoPrompt = `\n\nKeskustelun taustalla on tämä video: "${videoDesc}"\nOHJE:\n- ÄLÄ mainitse videota suoraan\n- Käytä videon elementtejä mielikuvan rakentamiseen`;
   } else {
     videoPrompt = "\n\nÄlä vihjaa myyntiin tai videoihin – keskity vain flirttiin.";
   }
 
   return `ROOLI: Olet erittäin flirttaava, seksuaalinen ja älykäs OnlyFans-malli (nimeltään 'Sinä' historiassa).
-Tärkein taitosi on mukautua fanin fantasiaan ja ohjata tilannetta tuhmempaan suuntaan.
 
 HENKILÖKOHTAISET ASETUKSET:${settingsPrompt || "\n(ei erityisiä asetuksia)"}
-
-ANALYSOI HISTORIA JA MATKI TYYLIÄ:
-1. Katso miten 'Sinä' on kirjoittanut (sanavalinnat, pituus, emojit).
-2. MATKI tätä tyyliä täydellisesti.
-3. Älä kuulosta botilta.
 
 TYYLI: ${tone}
 - ${tone}: ${TONE_PROMPTS[tone]}
@@ -74,26 +65,22 @@ SÄÄNNÖT:
 - Kieli: ${LANG_MAP[settings.language] || LANG_MAP.suomi}
 - Pituus: ${LENGTH_MAP[settings.length] || LENGTH_MAP.normaali}
 - KIELLETTY: aloitus äännähdyksellä (Mmm, Ooh, No voi jne.)
-- KIELLETTY: "kuvittele, miten..." enempää kuin kerran viidestä
-- KIELLETTY: lopeta kysymykseen enempää kuin joka toisessa
-- KIELLETTY: keksi fanin nimi ellei se lue historiassa
 - KIELLETTY: toista tai kommentoi omaa edellistä viestiäsi
 - KIELLETTY: viittaa kellonaikoihin tai päiviin ellei fani mainitse
 
 VIIMEISIN FANIN VIESTI: "${lastFan}"
 VIIMEISIN OMA VASTAUKSENI (jo lähetetty, ÄLÄ toista): "${lastMe}"
-TÄRKEÄÄ: Jatka siitä mihin MINÄ jäin. Älä reagoi fanin viestiin uudelleen.
 
 VIDEOOHJE: ${videoPrompt}
 
-KESKUSTELUHISTORIA (käytä VAIN tyylin mallina):
+KESKUSTELUHISTORIA:
 ${context}
 
 Kirjoita vastaus joka on 100% uskottava jatko 'Sinä'-hahmolta:`;
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "chrome-extension://*");
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -105,7 +92,6 @@ export default async function handler(req, res) {
   if (!tone) return res.status(400).json({ error: "Missing tone" });
   if (!lastFan) return res.status(400).json({ error: "Missing lastFan" });
 
-  // Validoi lisenssi
   const { data: license, error: licenseError } = await supabase
     .from("licenses")
     .select("*")
@@ -115,25 +101,21 @@ export default async function handler(req, res) {
   if (licenseError || !license) return res.status(403).json({ error: "Invalid license" });
   if (new Date(license.valid_until) < new Date()) return res.status(403).json({ error: "License expired" });
 
-  // Tarkista onko tyyli sallittu tälle tasolle
   const allowedTones = TIER_TONES[license.tier] || TIER_TONES.starter;
   if (!allowedTones.includes(tone)) {
     return res.status(403).json({ error: `Tone '${tone}' not available on ${license.tier} plan` });
   }
 
-  // Tarkista viestirajat
   const limit = TIER_MESSAGES[license.tier] || 500;
   if (license.tier !== "pro" && license.messages_used >= limit) {
     return res.status(429).json({ error: "Message limit reached" });
   }
 
-  // Kasvata laskuria
   await supabase
     .from("licenses")
     .update({ messages_used: license.messages_used + 1 })
     .eq("license_key", license_key);
 
-  // Rakenna prompt ja kutsu Grok
   const prompt = buildPrompt({
     tone,
     context: context || "",
@@ -161,11 +143,9 @@ export default async function handler(req, res) {
 
     const data = await grokRes.json();
     const message = data?.choices?.[0]?.message?.content || "";
-
     return res.status(200).json({ message: String(message).trim() });
   } catch (err) {
     console.error("Grok error:", err);
     return res.status(500).json({ error: "AI generation failed" });
   }
 }
-
