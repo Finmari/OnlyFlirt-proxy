@@ -35,27 +35,19 @@ async function sendLicenseEmail(email, licenseKey, tier) {
       subject: `JuicyFlirt ${tierName} – lisenssikoodisi ja asennusohjeet`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background: #fafafa;">
-
           <h1 style="font-size: 24px; color: #09090b; margin-bottom: 8px;">Tervetuloa JuicyFlirtiin! 🎉</h1>
           <p style="color: #71717a; margin-bottom: 32px;">Kiitos tilauksestasi! Tässä on lisenssikoodisi ja ohjeet laajennuksen asentamiseen.</p>
-
-          <!-- Lisenssiavain -->
           <div style="background: #18181b; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 32px;">
             <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Tilaustasosi: ${tierName}</p>
             <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Lisenssikoodisi</p>
             <p style="color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: 0.15em; margin: 0;">${licenseKey}</p>
             <p style="color: #71717a; font-size: 11px; margin-top: 8px;">Tallenna tämä koodi — tarvitset sitä asennuksessa</p>
           </div>
-
-          <!-- Latauslinkki -->
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 32px; text-align: center;">
             <p style="color: #15803d; font-size: 14px; font-weight: 600; margin-bottom: 8px;">📥 Lataa JuicyFlirt-laajennus</p>
             <a href="https://finmarixxx.com/juicyflirt/download/juicyflirt.zip" style="background: #16a34a; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">Lataa juicyflirt.zip</a>
           </div>
-
-          <!-- Asennusohjeet -->
           <h2 style="font-size: 18px; color: #09090b; margin-bottom: 16px;">📋 Asennusohjeet vaihe vaiheelta</h2>
-
           <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
             <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 1 — Lataa ja pura tiedosto</p>
             <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
@@ -64,7 +56,6 @@ async function sendLicenseEmail(email, licenseKey, tier) {
               <li>Pura kansio esim. työpöydälle — älä poista kansiota asennuksen jälkeen!</li>
             </ol>
           </div>
-
           <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
             <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 2 — Avaa Chromen laajennussivu</p>
             <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
@@ -73,7 +64,6 @@ async function sendLicenseEmail(email, licenseKey, tier) {
               <li>Laita päälle <strong>"Kehittäjätila"</strong> (Developer mode) — löytyy oikeasta yläkulmasta</li>
             </ol>
           </div>
-
           <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
             <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 3 — Asenna laajennus</p>
             <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
@@ -83,7 +73,6 @@ async function sendLicenseEmail(email, licenseKey, tier) {
               <li>JuicyFlirt ilmestyy laajennuslistaan ✓</li>
             </ol>
           </div>
-
           <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
             <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 4 — Syötä lisenssikoodisi</p>
             <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
@@ -94,12 +83,9 @@ async function sendLicenseEmail(email, licenseKey, tier) {
               <li>Klikkaa <strong>Tallenna</strong> — olet valmis! 🎉</li>
             </ol>
           </div>
-
-          <!-- Tärkeä huomio -->
           <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 8px; padding: 16px; margin-bottom: 32px;">
             <p style="color: #854d0e; font-size: 13px; margin: 0;"><strong>⚠️ Tärkeää:</strong> Laajennus toimii vain <strong>tietokoneella Chrome-selaimessa</strong>. Se ei toimi mobiililaitteilla tai muissa selaimissa.</p>
           </div>
-
           <p style="color: #a1a1aa; font-size: 13px; margin-top: 32px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
             Kysyttävää? Ota yhteyttä: juicylifemari@gmail.com<br/>
             © 2026 JuicyLife Oy
@@ -146,6 +132,54 @@ export default async function handler(req, res) {
     return res.status(200).json({ received: true });
   }
 
+  // Käsittele tilauksen päivitys — lähetä uusi lisenssi
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object;
+    const customerId = subscription.customer;
+    const priceId = subscription.items.data[0]?.price?.id;
+
+    const tierMap = {
+      [process.env.STRIPE_PRICE_STARTER]: "starter",
+      [process.env.STRIPE_PRICE_PLUS]: "plus",
+      [process.env.STRIPE_PRICE_PRO]: "pro"
+    };
+    const tier = tierMap[priceId] || "plus";
+
+    const { data: existingLicense } = await supabase
+      .from("licenses")
+      .select("email")
+      .eq("stripe_customer_id", customerId)
+      .single();
+
+    if (existingLicense?.email) {
+      await supabase.from("licenses").delete().eq("stripe_customer_id", customerId);
+
+      const licenseKey = generateLicenseKey();
+      const validUntil = new Date();
+      validUntil.setMonth(validUntil.getMonth() + 1);
+
+      await supabase.from("licenses").insert({
+        license_key: licenseKey,
+        email: existingLicense.email,
+        tier: tier,
+        messages_used: 0,
+        messages_limit: TIER_MESSAGES[tier] || 2000,
+        valid_until: validUntil.toISOString(),
+        stripe_subscription_id: subscription.id,
+        stripe_customer_id: customerId,
+      });
+
+      try {
+        await sendLicenseEmail(existingLicense.email, licenseKey, tier);
+        console.log(`Upgraded license sent: ${licenseKey} to ${existingLicense.email} (${tier})`);
+      } catch (emailErr) {
+        console.error("Email error:", emailErr);
+      }
+    }
+
+    return res.status(200).json({ received: true });
+  }
+
   if (event.type !== "checkout.session.completed") {
     return res.status(200).json({ received: true });
   }
@@ -153,13 +187,12 @@ export default async function handler(req, res) {
   const session = event.data.object;
   const email = session.customer_details?.email;
   const customerId = session.customer;
-  const tier = session.metadata?.tier || "plus";
+  const tier = session.metadata?.tier || "starter";
 
   if (!email) {
     return res.status(400).json({ error: "Missing email" });
   }
 
-  // Poista vanhat lisenssit samalle asiakkaalle
   if (customerId) {
     await supabase.from("licenses").delete().eq("stripe_customer_id", customerId);
   }
