@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
 
 export const config = { runtime: "nodejs" };
 
@@ -32,7 +31,7 @@ async function sendLicenseEmail(email, licenseKey, tier) {
     },
     body: JSON.stringify({
       from: "JuicyFlirt <mari@finmarixxx.com>",
-      to: 'email',
+      to: email,
       subject: `JuicyFlirt ${tierName} – lisenssikoodisi`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 32px; background: #fafafa; border-radius: 12px;">
@@ -46,10 +45,13 @@ async function sendLicenseEmail(email, licenseKey, tier) {
 
           <h2 style="font-size: 16px; color: #09090b; margin-bottom: 12px;">Näin otat laajennuksen käyttöön:</h2>
           <ol style="color: #71717a; padding-left: 20px; line-height: 2;">
-            <li>Avaa JuicyFlirt Chrome-laajennus</li>
-            <li>Klikkaa ⚙️ asetukset-nappia</li>
-            <li>Syötä lisenssikoodisi kenttään</li>
-            <li>Tallenna – olet valmis!</li>
+            <li>Lataa JuicyFlirt-laajennus: <a href="https://finmarixxx.com/juicyflirt/download/juicyflirt.zip">finmarixxx.com/juicyflirt/download/juicyflirt.zip</a></li>
+            <li>Pura zip-tiedosto kansioon</li>
+            <li>Avaa Chrome ja mene osoitteeseen: chrome://extensions/</li>
+            <li>Laita päälle "Kehittäjätila" oikeasta yläkulmasta</li>
+            <li>Klikkaa "Lataa pakkaamaton laajennus" ja valitse purettu kansio</li>
+            <li>Klikkaa laajennuksen ⚙️ asetukset-nappia</li>
+            <li>Syötä lisenssikoodisi kenttään ja tallenna</li>
           </ol>
 
           <p style="color: #a1a1aa; font-size: 13px; margin-top: 32px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
@@ -88,16 +90,32 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Webhook error: " + err.message });
   }
 
+  // Käsittele tilauksen peruutus — poista vanha lisenssi
+  if (event.type === "customer.subscription.deleted") {
+    const customerId = event.data.object.customer;
+    if (customerId) {
+      await supabase.from("licenses").delete().eq("stripe_customer_id", customerId);
+      console.log(`License deleted for customer: ${customerId}`);
+    }
+    return res.status(200).json({ received: true });
+  }
+
   if (event.type !== "checkout.session.completed") {
     return res.status(200).json({ received: true });
   }
 
   const session = event.data.object;
   const email = session.customer_details?.email;
+  const customerId = session.customer;
   const tier = session.metadata?.tier || "plus";
 
   if (!email) {
     return res.status(400).json({ error: "Missing email" });
+  }
+
+  // Poista vanhat lisenssit samalle asiakkaalle
+  if (customerId) {
+    await supabase.from("licenses").delete().eq("stripe_customer_id", customerId);
   }
 
   const licenseKey = generateLicenseKey();
@@ -112,6 +130,7 @@ export default async function handler(req, res) {
     messages_limit: TIER_MESSAGES[tier] || 2000,
     valid_until: validUntil.toISOString(),
     stripe_subscription_id: session.subscription || session.id,
+    stripe_customer_id: customerId || null,
   });
 
   if (dbError) {
