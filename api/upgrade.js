@@ -22,36 +22,43 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
-  const { license_key, new_tier } = req.body || {};
+  try {
+    const { license_key, new_tier } = req.body || {};
+    if (!license_key || !new_tier) {
+      return res.status(400).json({ error: "Missing license_key or new_tier" });
+    }
 
-  if (!license_key || !new_tier) {
-    return res.status(400).json({ error: "Missing license_key or new_tier" });
+    const { data: license, error } = await supabase
+      .from("licenses")
+      .select("*")
+      .eq("license_key", license_key)
+      .single();
+
+    if (error || !license) return res.status(403).json({ error: "Invalid license" });
+    if (!license.stripe_subscription_id?.startsWith("sub_")) {
+      return res.status(400).json({ error: "No active subscription found" });
+    }
+
+    const subscription = await stripe.subscriptions.retrieve(license.stripe_subscription_id);
+    
+    if (subscription.status === "canceled") {
+      return res.status(400).json({ error: "Subscription is canceled" });
+    }
+
+    const subscriptionItemId = subscription.items.data[0].id;
+    const newPriceId = TIER_PRICES[new_tier];
+
+    if (!newPriceId) return res.status(400).json({ error: "Invalid tier" });
+
+    await stripe.subscriptions.update(license.stripe_subscription_id, {
+      items: [{ id: subscriptionItemId, price: newPriceId }],
+      proration_behavior: "create_prorations",
+    });
+
+    return res.status(200).json({ success: true, message: "Subscription updated" });
+
+  } catch (err) {
+    console.error("Upgrade error:", err);
+    return res.status(500).json({ error: err.message || "Upgrade failed" });
   }
-
-  // Hae nykyinen lisenssi
-  const { data: license, error } = await supabase
-    .from("licenses")
-    .select("*")
-    .eq("license_key", license_key)
-    .single();
-
-  if (error || !license) return res.status(403).json({ error: "Invalid license" });
-  if (!license.stripe_subscription_id?.startsWith("sub_")) {
-    return res.status(400).json({ error: "No active subscription found" });
-  }
-
-  // Hae Stripe-tilaus
-  const subscription = await stripe.subscriptions.retrieve(license.stripe_subscription_id);
-  const subscriptionItemId = subscription.items.data[0].id;
-  const newPriceId = TIER_PRICES[new_tier];
-
-  if (!newPriceId) return res.status(400).json({ error: "Invalid tier" });
-
-  // Päivitä tilaus proratoinnilla
-  await stripe.subscriptions.update(license.stripe_subscription_id, {
-    items: [{ id: subscriptionItemId, price: newPriceId }],
-    proration_behavior: "create_prorations",
-  });
-
-  return res.status(200).json({ success: true, message: "Subscription updated" });
 }
