@@ -220,7 +220,7 @@ export default async function handler(req, res) {
   const session = event.data.object;
   const email = session.customer_details?.email;
   const customerId = session.customer;
-  const tier = session.metadata?.tier || "starter";
+  const tier = (session.metadata?.tier || "starter").toLowerCase();
 
   if (!email) {
     return res.status(400).json({ error: "Missing email" });
