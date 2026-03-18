@@ -19,9 +19,100 @@ function generateLicenseKey() {
   return key;
 }
 
-async function sendLicenseEmail(email, licenseKey, tier) {
+async function sendLicenseEmail(email, licenseKey, tier, isUpgrade = false) {
   const tierNames = { starter: "Starter", plus: "Plus", pro: "Pro" };
   const tierName = tierNames[tier] || tier;
+
+  const subject = isUpgrade
+    ? `JuicyFlirt ${tierName} – uusi lisenssikoodisi`
+    : `JuicyFlirt ${tierName} – lisenssikoodisi ja asennusohjeet`;
+
+  const html = isUpgrade ? `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background: #fafafa;">
+      <h1 style="font-size: 24px; color: #09090b; margin-bottom: 8px;">Tilaus päivitetty! 🎉</h1>
+      <p style="color: #71717a; margin-bottom: 32px;">Tilauksesi on vaihdettu tasolle <strong>${tierName}</strong>. Tässä on uusi lisenssikoodisi.</p>
+
+      <div style="background: #18181b; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 32px;">
+        <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Tilaustasosi: ${tierName}</p>
+        <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Uusi lisenssikoodisi</p>
+        <p style="color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: 0.15em; margin: 0;">${licenseKey}</p>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
+        <p style="font-weight: 600; color: #09090b; margin-bottom: 8px;">Näin vaihdat uuden koodin:</p>
+        <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
+          <li>Mene <strong>OnlyFans.com</strong> -sivulle</li>
+          <li>Klikkaa JuicyFlirt-nappia vasemmassa reunassa</li>
+          <li>Klikkaa <strong>⚙️ asetukset</strong> -nappia</li>
+          <li>Korvaa vanha koodi uudella: <strong style="color: #09090b;">${licenseKey}</strong></li>
+          <li>Klikkaa <strong>Tallenna</strong> — valmis! 🎉</li>
+        </ol>
+      </div>
+
+      <p style="color: #a1a1aa; font-size: 13px; margin-top: 32px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
+        Kysyttävää? Ota yhteyttä: juicylifemari@gmail.com<br/>
+        © 2026 JuicyLife Oy
+      </p>
+    </div>
+  ` : `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background: #fafafa;">
+      <h1 style="font-size: 24px; color: #09090b; margin-bottom: 8px;">Tervetuloa JuicyFlirtiin! 🎉</h1>
+      <p style="color: #71717a; margin-bottom: 32px;">Kiitos tilauksestasi! Tässä on lisenssikoodisi ja ohjeet laajennuksen asentamiseen.</p>
+      <div style="background: #18181b; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 32px;">
+        <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Tilaustasosi: ${tierName}</p>
+        <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Lisenssikoodisi</p>
+        <p style="color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: 0.15em; margin: 0;">${licenseKey}</p>
+        <p style="color: #71717a; font-size: 11px; margin-top: 8px;">Tallenna tämä koodi — tarvitset sitä asennuksessa</p>
+      </div>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 32px; text-align: center;">
+        <p style="color: #15803d; font-size: 14px; font-weight: 600; margin-bottom: 8px;">📥 Lataa JuicyFlirt-laajennus</p>
+        <a href="https://finmarixxx.com/juicyflirt/download/juicyflirt.zip" style="background: #16a34a; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">Lataa juicyflirt.zip</a>
+      </div>
+      <h2 style="font-size: 18px; color: #09090b; margin-bottom: 16px;">📋 Asennusohjeet vaihe vaiheelta</h2>
+      <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 1 — Lataa ja pura tiedosto</p>
+        <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
+          <li>Klikkaa yllä olevaa <strong>Lataa juicyflirt.zip</strong> -nappia</li>
+          <li>Avaa ladattu zip-tiedosto (tuplaklikkaus)</li>
+          <li>Pura kansio esim. työpöydälle — älä poista kansiota asennuksen jälkeen!</li>
+        </ol>
+      </div>
+      <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 2 — Avaa Chromen laajennussivu</p>
+        <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
+          <li>Avaa <strong>Google Chrome</strong> tietokoneella</li>
+          <li>Kirjoita osoitepalkkiin: <strong style="color: #09090b;">chrome://extensions/</strong> ja paina Enter</li>
+          <li>Laita päälle <strong>"Kehittäjätila"</strong> (Developer mode) — löytyy oikeasta yläkulmasta</li>
+        </ol>
+      </div>
+      <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 3 — Asenna laajennus</p>
+        <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
+          <li>Klikkaa <strong>"Lataa pakkaamaton laajennus"</strong> (Load unpacked)</li>
+          <li>Valitse purkamasi <strong>juicyflirt-extension</strong> -kansio</li>
+          <li>Klikkaa <strong>Valitse kansio</strong></li>
+          <li>JuicyFlirt ilmestyy laajennuslistaan ✓</li>
+        </ol>
+      </div>
+      <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
+        <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 4 — Syötä lisenssikoodisi</p>
+        <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
+          <li>Mene <strong>OnlyFans.com</strong> -sivulle</li>
+          <li>Näet vasemmassa reunassa <strong>JuicyFlirt-napin</strong> — klikkaa sitä</li>
+          <li>Klikkaa <strong>⚙️ asetukset</strong> -nappia</li>
+          <li>Syötä lisenssikoodisi kenttään: <strong style="color: #09090b;">${licenseKey}</strong></li>
+          <li>Klikkaa <strong>Tallenna</strong> — olet valmis! 🎉</li>
+        </ol>
+      </div>
+      <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+        <p style="color: #854d0e; font-size: 13px; margin: 0;"><strong>⚠️ Tärkeää:</strong> Laajennus toimii vain <strong>tietokoneella Chrome-selaimessa</strong>. Se ei toimi mobiililaitteilla tai muissa selaimissa.</p>
+      </div>
+      <p style="color: #a1a1aa; font-size: 13px; margin-top: 32px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
+        Kysyttävää? Ota yhteyttä: juicylifemari@gmail.com<br/>
+        © 2026 JuicyLife Oy
+      </p>
+    </div>
+  `;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -32,66 +123,8 @@ async function sendLicenseEmail(email, licenseKey, tier) {
     body: JSON.stringify({
       from: "JuicyFlirt <mari@finmarixxx.com>",
       to: email,
-      subject: `JuicyFlirt ${tierName} – lisenssikoodisi ja asennusohjeet`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px; background: #fafafa;">
-          <h1 style="font-size: 24px; color: #09090b; margin-bottom: 8px;">Tervetuloa JuicyFlirtiin! 🎉</h1>
-          <p style="color: #71717a; margin-bottom: 32px;">Kiitos tilauksestasi! Tässä on lisenssikoodisi ja ohjeet laajennuksen asentamiseen.</p>
-          <div style="background: #18181b; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 32px;">
-            <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Tilaustasosi: ${tierName}</p>
-            <p style="color: #a1a1aa; font-size: 12px; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase;">Lisenssikoodisi</p>
-            <p style="color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: 0.15em; margin: 0;">${licenseKey}</p>
-            <p style="color: #71717a; font-size: 11px; margin-top: 8px;">Tallenna tämä koodi — tarvitset sitä asennuksessa</p>
-          </div>
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 32px; text-align: center;">
-            <p style="color: #15803d; font-size: 14px; font-weight: 600; margin-bottom: 8px;">📥 Lataa JuicyFlirt-laajennus</p>
-            <a href="https://finmarixxx.com/juicyflirt/download/juicyflirt.zip" style="background: #16a34a; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">Lataa juicyflirt.zip</a>
-          </div>
-          <h2 style="font-size: 18px; color: #09090b; margin-bottom: 16px;">📋 Asennusohjeet vaihe vaiheelta</h2>
-          <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-            <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 1 — Lataa ja pura tiedosto</p>
-            <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
-              <li>Klikkaa yllä olevaa <strong>Lataa juicyflirt.zip</strong> -nappia</li>
-              <li>Avaa ladattu zip-tiedosto (tuplaklikkaus)</li>
-              <li>Pura kansio esim. työpöydälle — älä poista kansiota asennuksen jälkeen!</li>
-            </ol>
-          </div>
-          <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-            <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 2 — Avaa Chromen laajennussivu</p>
-            <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
-              <li>Avaa <strong>Google Chrome</strong> tietokoneella</li>
-              <li>Kirjoita osoitepalkkiin: <strong style="color: #09090b;">chrome://extensions/</strong> ja paina Enter</li>
-              <li>Laita päälle <strong>"Kehittäjätila"</strong> (Developer mode) — löytyy oikeasta yläkulmasta</li>
-            </ol>
-          </div>
-          <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-            <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 3 — Asenna laajennus</p>
-            <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
-              <li>Klikkaa <strong>"Lataa pakkaamaton laajennus"</strong> (Load unpacked)</li>
-              <li>Valitse purkamasi <strong>juicyflirt-extension</strong> -kansio</li>
-              <li>Klikkaa <strong>Valitse kansio</strong></li>
-              <li>JuicyFlirt ilmestyy laajennuslistaan ✓</li>
-            </ol>
-          </div>
-          <div style="background: #fff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
-            <p style="font-weight: 600; color: #09090b; margin-bottom: 4px;">Vaihe 4 — Syötä lisenssikoodisi</p>
-            <ol style="color: #71717a; padding-left: 20px; line-height: 2; margin: 0;">
-              <li>Mene <strong>OnlyFans.com</strong> -sivulle</li>
-              <li>Näet vasemmassa reunassa <strong>JuicyFlirt-napin</strong> — klikkaa sitä</li>
-              <li>Klikkaa <strong>⚙️ asetukset</strong> -nappia</li>
-              <li>Syötä lisenssikoodisi kenttään: <strong style="color: #09090b;">${licenseKey}</strong></li>
-              <li>Klikkaa <strong>Tallenna</strong> — olet valmis! 🎉</li>
-            </ol>
-          </div>
-          <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 8px; padding: 16px; margin-bottom: 32px;">
-            <p style="color: #854d0e; font-size: 13px; margin: 0;"><strong>⚠️ Tärkeää:</strong> Laajennus toimii vain <strong>tietokoneella Chrome-selaimessa</strong>. Se ei toimi mobiililaitteilla tai muissa selaimissa.</p>
-          </div>
-          <p style="color: #a1a1aa; font-size: 13px; margin-top: 32px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
-            Kysyttävää? Ota yhteyttä: juicylifemari@gmail.com<br/>
-            © 2026 JuicyLife Oy
-          </p>
-        </div>
-      `,
+      subject,
+      html,
     }),
   });
 
@@ -170,7 +203,7 @@ export default async function handler(req, res) {
       });
 
       try {
-        await sendLicenseEmail(existingLicense.email, licenseKey, tier);
+        await sendLicenseEmail(existingLicense.email, licenseKey, tier, true);
         console.log(`Upgraded license sent: ${licenseKey} to ${existingLicense.email} (${tier})`);
       } catch (emailErr) {
         console.error("Email error:", emailErr);
@@ -218,7 +251,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    await sendLicenseEmail(email, licenseKey, tier);
+    await sendLicenseEmail(email, licenseKey, tier, false);
     console.log(`License sent: ${licenseKey} to ${email} (${tier})`);
   } catch (emailErr) {
     console.error("Email error:", emailErr);
