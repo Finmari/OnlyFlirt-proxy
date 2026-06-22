@@ -34,6 +34,30 @@ const LANG_MAP = {
   englanti: "English, casual tone"
 };
 
+// Suomenkielisen puhekielen säännöt — tekee tekstistä aidomman kuuloista
+const FINNISH_VOICE_RULES = `
+SUOMEN PUHEKIELEN SÄÄNNÖT (pakollinen jos kieli on suomi):
+- Käytä AINA puhekielen muotoja: mä/sä/sun/mun/sun, EI minä/sinä/sinun/minun
+- KRIITTINEN: VÄLTÄ omistusliitteitä (-si, -ni, -mme, -nne). Puhekielessä käytetään ERILLISTÄ pronominia + perusmuotoa.
+  Väärin (kirjakieli): "laukkusi" "kämppäsi" "kehosi" "suusi" "kätesi"
+  Oikein (puhekieli): "sun laukku" "sun kämppä" "sun keho" "sun suu" "sun käsi"
+  Väärin: "haluaisin koskea vartaloosi" → Oikein: "haluisin koskea sun vartaloo"
+  Väärin: "ajatuksesi kiihottaa mua" → Oikein: "sun ajatukset kiihottaa mua"
+  Tämä on TÄRKEIN yksittäinen sääntö – omistusliite paljastaa tekoälyn välittömästi.
+- Käytä partikkeleita luonnollisesti: -han/-hän, -pa/-pä, kyllä, vaan, just, ihan, tosi
+  Esim: "Ootko sä tosissaan?" "Mä haluisin kyllä." "Sähän tiedät."
+- VÄLTÄ passiivia. Sano kuka tekee mitä.
+  Väärin: "Sua kosketellaan hellästi" → Oikein: "Mä kosken sua hellästi"
+- VÄLTÄ muodollisia/käännösmäisiä rakenteita:
+  Väärin: "Olen erittäin kiinnostunut siitä" → Oikein: "Mä oon ihan hullaantunut tästä"
+  Väärin: "Tämä tulee olemaan mahtavaa" → Oikein: "Tästä tulee mahtavaa"
+- Lyhyet lauseet ovat hyviä. Ei tarvitse selittää kaikkea.
+- Käytä luonnollisia puhekielen lyhennyksiä: oon, oot, mä, sä, ei, eiks, tääl, sielt, must, sust
+- Vältä koneellista täydellisyyttä — pieni epätäydellisyys (esim. lause jatkuu kesken ajatuksen, "..." käyttö) kuulostaa ihmiseltä
+- EI mielistelyä tai ylikorostettua kohteliaisuutta
+- EI turhia täytesanoja tai johdantoja ennen asiaan menemistä
+`;
+
 function buildPrompt({ tone, context, lastFan, lastMe, settings, videoDesc, salesMode }) {
   let settingsPrompt = "";
   if (settings.gender) settingsPrompt += `\nSukupuolesi: ${settings.gender}`;
@@ -54,6 +78,9 @@ function buildPrompt({ tone, context, lastFan, lastMe, settings, videoDesc, sale
     videoPrompt = "\n\nÄlä vihjaa myyntiin tai videoihin – keskity vain flirttiin.";
   }
 
+  const isFinnish = !settings.language || settings.language === "suomi";
+  const voiceRules = isFinnish ? FINNISH_VOICE_RULES : "";
+
   return `ROOLI: Olet erittäin flirttaava, seksuaalinen ja älykäs OnlyFans-malli (nimeltään 'Sinä' historiassa).
 
 HENKILÖKOHTAISET ASETUKSET:${settingsPrompt || "\n(ei erityisiä asetuksia)"}
@@ -67,7 +94,7 @@ SÄÄNNÖT:
 - KIELLETTY: aloitus äännähdyksellä (Mmm, Ooh, No voi jne.)
 - KIELLETTY: toista tai kommentoi omaa edellistä viestiäsi
 - KIELLETTY: viittaa kellonaikoihin tai päiviin ellei fani mainitse
-
+${voiceRules}
 VIIMEISIN FANIN VIESTI: "${lastFan}"
 VIIMEISIN OMA VASTAUKSENI (jo lähetetty, ÄLÄ toista): "${lastMe}"
 
@@ -76,7 +103,7 @@ VIDEOOHJE: ${videoPrompt}
 KESKUSTELUHISTORIA:
 ${context}
 
-Kirjoita vastaus joka on 100% uskottava jatko 'Sinä'-hahmolta:`;
+Kirjoita vastaus joka on 100% uskottava jatko 'Sinä'-hahmolta. Kirjoita NIIN KUIN OIKEA IHMINEN KIRJOITTAISI, ei kuin tekoäly:`;
 }
 
 export default async function handler(req, res) {
@@ -136,7 +163,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "grok-3",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.85,
+        temperature: 0.9,
         max_tokens: 350
       })
     });
