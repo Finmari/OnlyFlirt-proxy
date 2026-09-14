@@ -9,6 +9,32 @@ const supabase = createClient(
 
 const TIER_MESSAGES = { starter: 500, plus: 2000, pro: 999999999 };
 
+// Price ID → tier -kartta (kovakoodattu varmuuden vuoksi)
+const PRICE_TIER_MAP = {
+  "price_1TC2wLAHFU6bw5Lmh0seymTA": "starter",
+  "price_1TC2wNAHFU6bw5LmKBayz2S0": "plus",
+  "price_1TC2wLAHFU6bw5Lmt4QSVF90": "pro",
+};
+
+function getTierFromSession(session) {
+  // 1. Yritetään ensin metadata
+  if (session.metadata?.tier) {
+    return session.metadata.tier.toLowerCase();
+  }
+  // 2. Yritetään line_items price ID:stä (ei aina saatavilla checkout.session.completed:ssa)
+  const lineItemPrice = session.line_items?.data?.[0]?.price?.id;
+  if (lineItemPrice && PRICE_TIER_MAP[lineItemPrice]) {
+    return PRICE_TIER_MAP[lineItemPrice];
+  }
+  // 3. Yritetään amount_total perusteella
+  const amount = session.amount_total;
+  if (amount >= 5990) return "pro";
+  if (amount >= 4490) return "plus";
+  if (amount >= 2990) return "starter";
+  // 4. Oletusarvo
+  return "starter";
+}
+
 function generateLicenseKey() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let key = "";
@@ -187,13 +213,7 @@ export default async function handler(req, res) {
     const subscription = event.data.object;
     const customerId = subscription.customer;
     const priceId = subscription.items.data[0]?.price?.id;
-
-    const tierMap = {
-      [process.env.STRIPE_PRICE_STARTER]: "starter",
-      [process.env.STRIPE_PRICE_PLUS]: "plus",
-      [process.env.STRIPE_PRICE_PRO]: "pro"
-    };
-    const tier = tierMap[priceId] || "plus";
+    const tier = PRICE_TIER_MAP[priceId] || (process.env.STRIPE_PRICE_STARTER && priceId === process.env.STRIPE_PRICE_STARTER ? "starter" : "plus");
 
     const { data: existingLicense } = await supabase
       .from("licenses")
@@ -237,7 +257,9 @@ export default async function handler(req, res) {
   const session = event.data.object;
   const email = session.customer_details?.email;
   const customerId = session.customer;
-  const tier = (session.metadata?.tier || "starter").toLowerCase();
+  const tier = getTierFromSession(session);
+
+  console.log(`Tier detected: ${tier} for session ${session.id} (amount: ${session.amount_total})`);
 
   if (!email) {
     return res.status(400).json({ error: "Missing email" });
