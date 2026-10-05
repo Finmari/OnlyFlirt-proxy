@@ -213,7 +213,7 @@ export default async function handler(req, res) {
     const subscription = event.data.object;
     const customerId = subscription.customer;
     const priceId = subscription.items.data[0]?.price?.id;
-    const tier = PRICE_TIER_MAP[priceId] || (process.env.STRIPE_PRICE_STARTER && priceId === process.env.STRIPE_PRICE_STARTER ? "starter" : "plus");
+    const tier = PRICE_TIER_MAP[priceId] || "starter";
 
     const { data: existingLicense } = await supabase
       .from("licenses")
